@@ -1,0 +1,35 @@
+version: '3'
+services:
+  recommendation_exp1:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    working_dir: /home
+    ports:
+      - 8888:8888
+      - 6006:6006
+    command: /home/run_jupyter.sh
+    volumes:
+      - ./home:/home
+      - ./footprint:/footprint
+      - ./datasets:/dataset
+      - ./notebook:/notebook
+      - ./cache:/cache
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    environment:
+       - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.5.1
+    ports:
+      - "5601:5601"
+volumes:
+  elasticsearch:
