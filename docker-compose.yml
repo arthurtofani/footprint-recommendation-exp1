@@ -12,7 +12,7 @@ services:
     volumes:
       - ./home:/home
       - ./footprint:/footprint
-      - ./datasets:/dataset
+      - ./dataset:/dataset
       - ./notebook:/notebook
       - ./cache:/cache
   elasticsearch:

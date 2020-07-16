@@ -1,10 +1,10 @@
 import footprint.clients as db
 
-def connect_to_elasticsearch(p, clear=True):
+def connect_to_elasticsearch(p, db_index_name, clear=True):
   cli = db.elasticsearch.Connection(host='elasticsearch', port=9200)
   if clear:
-    cli.clear_index('recommendation_exp1')
-    cli.setup_index('recommendation_exp1', initial_settings())
+    cli.clear_index(db_index_name)
+    cli.setup_index(db_index_name, initial_settings())
   p.set_connection(cli)
 
 
