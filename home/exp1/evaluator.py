@@ -1,4 +1,3 @@
-
 import glob
 import random
 from collections import defaultdict
@@ -67,7 +66,7 @@ class Evaluator:
         self.freqs = pd.concat([self.freqs, freqs])
 
   def evaluate(self, field_name, query_dataset_full):
-    self.results = pd.DataFrame(columns=['session', 'returned_candidates', 'unique_candidates', 'top1_match', 'top_n_match', 'terms_in_session', 'candidate_recs', 'rank_ratio'])
+    self.results = pd.DataFrame(columns=['session', 'returned_candidates', 'unique_candidates', 'top1_match', 'top_5_match', 'top_10_match', 'terms_in_session', 'candidate_recs', 'rank_ratio_5', 'rank_ratio_10'])
     for idx, session in enumerate(self.query_dataset.session.unique()):
       full_session = query_dataset_full[query_dataset_full.session==int(session)]
 
@@ -75,12 +74,17 @@ class Evaluator:
       query = self.query_dataset[self.query_dataset.session==session]
       recs = self.freqs[self.freqs.query_session==session]
       recs_present_top_1 = recs[field_name][:1].isin(full_session[field_name]).astype(int).sum()
-      recs_present_top_n = recs[field_name].isin(full_session[field_name]).astype(int).sum()
+      recs_present_top_5 = recs[field_name][:5].isin(full_session[field_name]).astype(int).sum()
+      recs_present_top_10 = recs[field_name][:10].isin(full_session[field_name]).astype(int).sum()
       terms_in_query = len(query)
       candidate_recs = len(recs)
       try:
-        rank_ratio = recs_present_top_n/candidate_recs
+        rank_ratio_5 = recs_present_top_5/candidate_recs
+        rank_ratio_10 = recs_present_top_10/candidate_recs
       except:
-        rank_ratio = 0
+        rank_ratio_5 = 0
+        rank_ratio_10 = 0
       #import code; code.interact(local=dict(globals(), **locals()))
-      self.results.loc[len(self.results)] = ([session, recs['count'].sum(), len(recs), recs_present_top_1, recs_present_top_n, terms_in_query, candidate_recs, rank_ratio])
+      xx = [session,    recs['count'].sum(),  len(recs),           recs_present_top_1, recs_present_top_5, recs_present_top_10, terms_in_query,    candidate_recs,   rank_ratio_5, rank_ratio_10]
+
+      self.results.loc[len(self.results)] = (xx)
