@@ -33,19 +33,18 @@ final_df = pd.DataFrame(columns=['iter', 'num_query_terms', 'document_field', 't
                               'num_train_documents', 'num_test_documents', 'query_terms_ratio'])
 
 output_file = '/notebook/all_results.csv'
-num_iterations = 3
+
+num_iterations = 1
 logging.info("Starting evaluation")
 db_index_name = 'recommendation_exp1'
-dataset = pd.read_csv('/dataset/sessions.md.csv')
+#dataset = pd.read_csv('/dataset/sessions_eval.sm.csv')
+dataset = pd.read_csv('/dataset/pcounts_filtered_december_2013.csv')
 
-#dataset = pd.read_csv('/dataset/pcounts_filtered_december_2013.csv')
-
-for document_field in ['session', 'user']:
+for itr in range(num_iterations):
   for term_field in ['track', 'artist']:
-    for tokenization_method in [get_terms, get_terms_with_seq]:
-      for query_terms_ratio in [0.2, 0.4, 0.5, 0.6, 0.8]:
-        for itr in range(num_iterations):
-
+    for document_field in ['session', 'user']:
+      for query_terms_ratio in [0.8, 0.5, 0.2, 0.4]:
+        for tokenization_method in [get_terms, get_terms_with_seq]:
           ds_counts = dataset.groupby([document_field]).count()
           #cond = (ds_counts['track'] >= 9) & (ds_counts['track'] <= 15)
           cond = (ds_counts[term_field] >= 2)
@@ -53,7 +52,7 @@ for document_field in ['session', 'user']:
 
           factor = 0.8
 
-          documents = dataset.sort_values(['time'])[document_field].unique()
+          documents = dataset.sort_values(['timestamp'])[document_field].unique()
           train_documents = documents[0:int(len(documents) * factor)]
           test_documents = documents[int(len(documents) * factor):]
 
