@@ -74,8 +74,10 @@ class Evaluator:
       query = self.query_dataset[self.query_dataset[document_field]==document]
       recs = self.freqs[self.freqs.query_document==document]
       recs_present_top_1 = recs[term_field][:1].isin(full_document[term_field]).astype(int).sum()
-      recs_present_top_5 = recs[term_field][:5].isin(full_document[term_field]).astype(int).sum()
-      recs_present_top_10 = recs[term_field][:10].isin(full_document[term_field]).astype(int).sum()
+      recs_present_top_5 = recs[term_field][:5].isin(full_document[term_field]).astype(int).sum()>0
+      recs_present_top_5 = recs_present_top_5.astype(int)
+      recs_present_top_10 = recs[term_field][:10].isin(full_document[term_field]).astype(int).sum()>0
+      recs_present_top_10 = recs_present_top_10.astype(int)
       terms_in_query = len(query)
       candidate_recs = len(recs)
       try:
