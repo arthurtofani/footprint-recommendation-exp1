@@ -18,6 +18,17 @@ logging.basicConfig(
     ]
 )
 
+
+def already_done(d, itr, term_field, document_field, query_terms_ratio, tokenizaton_method):
+  recs = d[(d.iter==itr) &
+    (d.term_field==term_field) &
+    (d.document_field==document_field) &
+    (d.strgy==tokenization_method.__name__) &
+    (d.query_terms_ratio==query_terms_ratio)
+    ]
+  return (len(recs)>0)
+#import code; code.interact(local=dict(globals(), **locals()))
+
 def get_terms(document):
   tokens = dataset[dataset[document_field]==int(document.filename)][term_field].astype(str)
   return ' '.join(tokens)
@@ -28,11 +39,14 @@ def get_terms_with_seq(document):
   tokens = list(r + ':' + r2)
   return ' '.join(tokens)
 
-final_df = pd.DataFrame(columns=['iter', 'num_query_terms', 'document_field', 'term_field', 'strgy',
-                              'top1_acc', 'top5_acc', 'top10_acc',
-                              'num_train_documents', 'num_test_documents', 'query_terms_ratio'])
-
 output_file = '/notebook/all_results.csv'
+try:
+  final_df = pd.read_csv(output_file)
+except FileNotFoundError:
+  final_df = pd.DataFrame(columns=['iter', 'num_query_terms', 'document_field', 'term_field', 'strgy',
+                                'top1_acc', 'top5_acc', 'top10_acc',
+                                'num_train_documents', 'num_test_documents', 'query_terms_ratio'])
+
 
 num_iterations = 1
 logging.info("Starting evaluation")
@@ -42,9 +56,13 @@ dataset = pd.read_csv('/dataset/pcounts_filtered_december_2013.csv')
 
 for itr in range(num_iterations):
   for term_field in ['track', 'artist']:
-    for document_field in ['session', 'user']:
-      for query_terms_ratio in [0.8, 0.5, 0.2, 0.4]:
+    for query_terms_ratio in [0.8, 0.5, 0.2, 0.4]:
+        for document_field in ['session', 'user']:
         for tokenization_method in [get_terms, get_terms_with_seq]:
+          if already_done(final_df, itr, term_field, document_field, query_terms_ratio, tokenization_method):
+            print('skipping')
+            continue
+
           ds_counts = dataset.groupby([document_field]).count()
           #cond = (ds_counts['track'] >= 9) & (ds_counts['track'] <= 15)
           cond = (ds_counts[term_field] >= 2)
@@ -98,7 +116,10 @@ for itr in range(num_iterations):
             evaluator.results.mean().top_10_match, len(train_dataset),
             len(query_dataset_full), query_terms_ratio]
 
-          final_df.loc[len(final_df)] = complete_row
+          try:
+            final_df.loc[len(final_df)] = complete_row
+          except:
+            import code; code.interact(local=dict(globals(), **locals()))
 
           for i, r in evaluator.results.groupby(['terms_in_document']).mean().iterrows():
             #import code; code.interact(local=dict(globals(), **locals()))
@@ -109,9 +130,9 @@ for itr in range(num_iterations):
 
             final_df.loc[len(final_df)] = row
 
-          final_df.to_csv(output_file)
+          final_df.to_csv(output_file, index=False)
 
-
+print("Done!")
 
 #['iter', 'num_query_terms', 'document_field', 'term_field', 'strgy',
 #                              'top1_acc', 'top5_acc', 'top10_acc',
