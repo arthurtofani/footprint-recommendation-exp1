@@ -22,7 +22,7 @@ logging.basicConfig(
     ]
 )
 
-# Usage: python3 preprocess_dataset.py /cache /dataset/sessions.md.csv
+# Usage: python3 preprocess_dataset.py /cache /dataset/sessions.md.csv 3
 
 def preprocess_dataset(dataset_file, cache_folder, document_field, term_field, query_terms_ratio, factor=0.8, min_seq_len=5, max_seq_len=100, timestamp_field='timestamp'):
 
@@ -30,6 +30,7 @@ def preprocess_dataset(dataset_file, cache_folder, document_field, term_field, q
   os.makedirs(dataset_cache_folder, exist_ok=True)
   filename = '%s_%s_%s' % (document_field, term_field, query_terms_ratio)
   query_dataset_file = dataset_cache_folder + '/' + filename + '_queries.csv'
+  full_query_dataset_file = dataset_cache_folder + '/' + filename + '_fullqueries.csv'
   train_dataset_file = dataset_cache_folder + '/' + filename + '_train.csv'
   if os.path.exists(query_dataset_file):
     return
@@ -48,27 +49,35 @@ def preprocess_dataset(dataset_file, cache_folder, document_field, term_field, q
   logging.info('creating query documents list')
   query_dataset_full = dataset[dataset[document_field].isin(test_documents)]
   recs_to_remove = query_dataset_full.groupby([document_field]).apply(lambda x: x.sample(int(len(x)*query_terms_ratio)))[term_field]
-  ds_counts = dataset.groupby([document_field]).count()
+  #ds_counts = dataset.groupby([document_field]).count()
 
   # create a new dataset by removing 1 track (randomly) from each session
   query_dataset = query_dataset_full[~query_dataset_full[term_field].isin(recs_to_remove)].copy().reset_index()
   query_dataset[term_field] = query_dataset[term_field].astype(str)
-  query_dataset = query_dataset.groupby([document_field])[term_field].apply(','.join)
+  query_dataset = query_dataset.groupby([document_field])[term_field].apply(' '.join)
   query_dataset = query_dataset.reset_index()
   query_dataset.columns = ['document', 'terms']
+
+  query_dataset_full[term_field] = query_dataset_full[term_field].astype(str)
+  query_dataset_full = query_dataset_full.groupby([document_field])[term_field].apply(' '.join)
+  query_dataset_full = query_dataset_full.reset_index()
+  query_dataset_full.columns = ['document', 'terms']
 
 
   logging.info('creating db documents list')
   train_dataset = dataset[dataset[document_field].isin(train_documents)]
   train_dataset[term_field] = train_dataset[term_field].astype(str)
-  train_dataset = train_dataset.groupby([document_field])[term_field].apply(','.join)
+  train_dataset = train_dataset.groupby([document_field])[term_field].apply(' '.join)
   train_dataset = train_dataset.reset_index()
+  train_dataset.columns = ['document', 'terms']
 
 
   logging.info('saving...')
   query_dataset.to_csv(query_dataset_file, index=False)
   logging.info('created %s' % query_dataset_file)
 
+  query_dataset_full.to_csv(full_query_dataset_file, index=False)
+  logging.info('created %s' % full_query_dataset_file)
 
   train_dataset.to_csv(train_dataset_file, index=False)
   logging.info('created %s' % train_dataset_file)
@@ -84,12 +93,17 @@ def preprocess_eval_instance(arg):
   preprocess_dataset(dataset_file, cache_folder, document_field, term_field, query_terms_ratio)
 
 
-pool = Pool(3)
+try:
+  num_processors = int(sys.argv[3])
+except:
+  num_processors = None
+
+pool = Pool(num_processors)
 args = [[sys.argv[2], sys.argv[1], *inst] for inst in execution.evaluation_instances()]
 pool.map(preprocess_eval_instance, args)
 pool.close()
 pool.join()
-  #preprocess_eval_instance(sys.argv[2], sys.argv[1], *evaluation_instance)
+#preprocess_eval_instance(args[0])
 
 #import code; code.interact(local=dict(globals(), **locals()))
 
