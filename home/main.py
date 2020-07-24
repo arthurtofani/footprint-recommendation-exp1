@@ -1,4 +1,5 @@
 import time
+import random
 from multiprocessing import Pool
 from itertools import chain, combinations, product
 from footprint.models import Project
@@ -105,6 +106,8 @@ def exec_process(dataset_file, cache_folder, output_file, itr, term_field, docum
     r.top_10_match, len(train_dataset),
     len(query_dataset_full), query_terms_ratio]
     final_df.loc[len(final_df)] = row
+  safe_sleep = random.random() * 10
+  time.sleep(safe_sleep)
   final_df.to_csv(output_file, index=False)
 
 
@@ -113,7 +116,7 @@ logging.info("Starting evaluation")
 output_file = '/notebook/all_results.csv'
 
 #dataset_file = '/dataset/pcounts_filtered_december_2013.csv'
-dataset_file = '/dataset/sessions.md.csv'
+dataset_file = '/dataset/sessions.sm.csv'
 cache_folder = '/cache'
 
 #preprocess_dataset(dataset_file, '/cache', 'session', 'track', 0.8)
