@@ -113,10 +113,10 @@ def exec_process(dataset_file, cache_folder, output_file, itr, term_field, docum
 
 logging.info("Starting evaluation")
 
-output_file = '/notebook/all_results.csv'
+output_file = '/notebook/all_results.md.csv'
 
 #dataset_file = '/dataset/pcounts_filtered_december_2013.csv'
-dataset_file = '/dataset/sessions.sm.csv'
+dataset_file = '/dataset/sessions.md.csv'
 cache_folder = '/cache'
 
 #preprocess_dataset(dataset_file, '/cache', 'session', 'track', 0.8)
