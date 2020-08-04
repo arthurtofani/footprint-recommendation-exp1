@@ -8,6 +8,7 @@ def connect_to_elasticsearch(p, db_index_name, clear=True):
   p.set_connection(cli)
 
 
+
 def initial_settings():
   return {
     "settings" : {
