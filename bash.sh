@@ -1,1 +1,1 @@
-docker-compose run --rm recommendation_exp1 bash
+docker-compose run recommendation_exp1 bash

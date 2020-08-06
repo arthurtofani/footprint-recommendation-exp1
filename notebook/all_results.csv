@@ -1,0 +1,1 @@
+iter,num_query_terms,document_field,term_field,strgy,top1_acc,top5_acc,top10_acc,num_train_documents,num_test_documents,query_terms_ratio

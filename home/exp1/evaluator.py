@@ -26,65 +26,75 @@ class Evaluator:
   def build(self, dataset):
     logging.info('Building dataset')
     self.dataset = dataset
-    amnt = len(self.dataset.session.unique())
-    for idx, session in enumerate(self.dataset.session.unique()):
-      logging.info('Adding session %s/%s' % (idx, amnt))
-      self.project.add(str(session))
+    amnt = len(self.dataset['document'].unique())
+    for idx, document in enumerate(self.dataset['document'].unique()):
+      logging.info('Adding document %s/%s' % (idx, amnt))
+      self.project.add(str(document))
 
-
-  def match(self, field_name, query_dataset, amnt_results_per_query=10, top_n_recs=10):
+  def match(self, query_dataset, query_dataset_full, ngrams_size, amnt_results_per_query=10, top_n_recs=10):
     '''
     Performs match between the songs in the query_files file and those ones
     received by the #build method
     '''
     df = self.query_dataset = query_dataset
-    amnt = len(df.session.unique())
-    for idx, session in enumerate(df.session.unique()):
-      logging.info('Matching session %s/%s' % (idx, amnt))
-      query = df[df.session==int(session)]
+    amnt = len(df['document'].unique())
+    self.results = pd.DataFrame(columns=['document', 'candidates', 'top1_match', 'top_5_match', 'top_10_match', 'pos_1st_match', 'query_terms', 'full_query_terms'])
+    self.results = self.results.astype(int)
 
+    for idx, document in enumerate(df['document'].unique()):
+      logging.info('Matching document %s/%s' % (idx, amnt))
       # Perform query on database
-      payload = self.project.match(str(session), amnt_results_per_query)[1]
+      doc, payload = self.project.match(str(document), amnt_results_per_query)
+      key = list(doc.tokens.keys())[0]
+      #import code; code.interact(local=dict(globals(), **locals()))
+      # Use the returned document ids to gather document info on self.dataset
 
+      #returned_records = self.dataset[self.dataset.document.isin([i.filename for i in payload])]
+      #all_returned_terms = ' '.join(returned_records.terms).split(' ')
+      query_terms = doc.tokens[key].split(' ')
+      try:
+        query_terms.remove('')
+      except:
+        pass
 
-      # Use the returned session ids to gather session info on self.dataset
-      returned_records = self.dataset[self.dataset.session.isin([i.filename for i in payload])]
-      returned_records = returned_records[~returned_records[field_name].isin(query[field_name])] # remove songs already in query session
+      all_returned_terms = (' '.join([payload[i].tokens[key] for i in range(len(payload))])).split(' ')
+      try:
+        all_returned_terms.remove('')
+      except:
+        pass
 
-      # Calculate the most frequent recs associated to that query session (but not in the session)
-      freqs = returned_records.groupby([field_name]).count()
-      freqs = freqs.reset_index()
-      freqs['track_num'] = freqs[field_name].astype(int)
-      freqs = freqs.sort_values(['session', 'track_num'], ascending=[False, True])
-      freqs = freqs[[field_name, 'user']]
-      freqs.columns = [field_name, 'count']
-      freqs = freqs[:top_n_recs]
-      freqs['query_session'] = session
-      if self.freqs is None:
-        self.freqs = freqs
-      else:
-        self.freqs = pd.concat([self.freqs, freqs])
+      results_df = pd.DataFrame(all_returned_terms, columns=['terms'])
+      results_df = results_df[~results_df.terms.isin(query_terms)]
+      results_df = results_df.terms.value_counts().reset_index()
+      results_df.columns = ['term', 'ct']
+      #results_df['query_document'] = document
 
-  def evaluate(self, field_name, query_dataset_full):
-    self.results = pd.DataFrame(columns=['session', 'returned_candidates', 'unique_candidates', 'top1_match', 'top_5_match', 'top_10_match', 'terms_in_session', 'candidate_recs', 'rank_ratio_5', 'rank_ratio_10'])
-    for idx, session in enumerate(self.query_dataset.session.unique()):
-      full_session = query_dataset_full[query_dataset_full.session==int(session)]
+      terms_histogram = self.calc_terms_histogram(results_df)
+
+      query = df[df['document']==int(document)]
+      unique_query_terms = query['terms'].values[0].split(' ')
+      recs = terms_histogram[~terms_histogram.index.isin(unique_query_terms)]
+
+      #try:
+      #  if list(results_df.ct)[0] > 1:
+      #    import code; code.interact(local=dict(globals(), **locals()))
+      #except:
+      #  print('eee', document)
+
+      full_query_terms = (query_dataset_full[query_dataset_full['document']==int(document)].terms.values[0]).split(' ')
 
       # The songs recommended by the system
-      query = self.query_dataset[self.query_dataset.session==session]
-      recs = self.freqs[self.freqs.query_session==session]
-      recs_present_top_1 = recs[field_name][:1].isin(full_session[field_name]).astype(int).sum()
-      recs_present_top_5 = recs[field_name][:5].isin(full_session[field_name]).astype(int).sum()
-      recs_present_top_10 = recs[field_name][:10].isin(full_session[field_name]).astype(int).sum()
-      terms_in_query = len(query)
-      candidate_recs = len(recs)
-      try:
-        rank_ratio_5 = recs_present_top_5/candidate_recs
-        rank_ratio_10 = recs_present_top_10/candidate_recs
-      except:
-        rank_ratio_5 = 0
-        rank_ratio_10 = 0
-      #import code; code.interact(local=dict(globals(), **locals()))
-      xx = [session,    recs['count'].sum(),  len(recs),           recs_present_top_1, recs_present_top_5, recs_present_top_10, terms_in_query,    candidate_recs,   rank_ratio_5, rank_ratio_10]
+      #recs = results_df[results_df.query_document==document]
 
+      try:
+        # gets the first occurrence that is found into full_query_terms
+        pos_1st_match = ((1-recs.index.isin(full_query_terms).astype(int)).argsort()[0])+1
+      except:
+        pos_1st_match = -1
+      xx = [document, len(recs), int(pos_1st_match==1), int(pos_1st_match<=5), int(pos_1st_match<=10), pos_1st_match, len(unique_query_terms), len(full_query_terms)]
       self.results.loc[len(self.results)] = (xx)
+
+  def calc_terms_histogram(self, results_df):
+    terms = ''.join(list(((results_df.term + ':')*results_df.ct)))[:-1].split(':')
+    ctdf = pd.DataFrame(terms)
+    return ctdf[0].value_counts()

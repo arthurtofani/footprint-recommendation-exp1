@@ -25,6 +25,7 @@ services:
         hard: -1
     volumes:
       - elasticsearch:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     ports:
       - 9200:9200
   kibana:
