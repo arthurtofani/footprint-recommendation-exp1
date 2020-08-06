@@ -1,0 +1,8 @@
+itr,build_time,match_time,amnt_docs,amnt_queries,term_field,document_field,query_terms_ratio,memory_size,index_size_kb
+1,37250.064,3122.16,693732,79089,track,session,0.8,3,361477
+1,37378.055,3156.621,693732,79089,track,session,0.8,2,335803
+1,343.492,106.797,10368,2417,track,user,0.8,1,7533
+1,37340.58,3663.098,693732,79089,track,session,0.8,1,274721
+1,691.249,94.448,10368,2417,track,user,0.8,2,9515
+1,722.191,116.384,10368,2417,track,user,0.8,3,11081
+1,405.936,90.565,10368,2417,track,user,0.8,4,12190

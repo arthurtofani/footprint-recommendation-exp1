@@ -43,8 +43,6 @@ class Evaluator:
 
     for idx, document in enumerate(df['document'].unique()):
       logging.info('Matching document %s/%s' % (idx, amnt))
-      #query = df[df['document']==int(document)]
-      #query_terms = query['terms'].values[0].split(' ')
       # Perform query on database
       doc, payload = self.project.match(str(document), amnt_results_per_query)
       key = list(doc.tokens.keys())[0]
@@ -69,27 +67,34 @@ class Evaluator:
       results_df = results_df[~results_df.terms.isin(query_terms)]
       results_df = results_df.terms.value_counts().reset_index()
       results_df.columns = ['term', 'ct']
-      results_df['query_document'] = document
+      #results_df['query_document'] = document
 
-      #
+      terms_histogram = self.calc_terms_histogram(results_df)
 
+      query = df[df['document']==int(document)]
+      unique_query_terms = query['terms'].values[0].split(' ')
+      recs = terms_histogram[~terms_histogram.index.isin(unique_query_terms)]
 
-      full_query_terms = query_dataset_full[query_dataset_full['document']==int(document)].terms.values[0]
-      r = full_query_terms.split(' ')
-      full_document_terms = [':'.join(r[i:i+ngrams_size]) for i in range(len(r)-ngrams_size+1)]
+      #try:
+      #  if list(results_df.ct)[0] > 1:
+      #    import code; code.interact(local=dict(globals(), **locals()))
+      #except:
+      #  print('eee', document)
+
+      full_query_terms = (query_dataset_full[query_dataset_full['document']==int(document)].terms.values[0]).split(' ')
 
       # The songs recommended by the system
-      recs = results_df[results_df.query_document==document]
+      #recs = results_df[results_df.query_document==document]
 
-      recs_present_top_1 = recs['term'][:1].isin(full_document_terms).astype(int).sum()
-      recs_present_top_5 = recs['term'][:5].isin(full_document_terms).astype(int).sum()>0
-      recs_present_top_5 = recs_present_top_5.astype(int)
-      recs_present_top_10 = recs['term'][:10].isin(full_document_terms).astype(int).sum()>0
-      recs_present_top_10 = recs_present_top_10.astype(int)
-      candidate_recs = len(recs)
       try:
-        pos_1st_match = recs[recs.term.isin(full_document_terms)].index[0]+1
+        # gets the first occurrence that is found into full_query_terms
+        pos_1st_match = ((1-recs.index.isin(full_query_terms).astype(int)).argsort()[0])+1
       except:
         pos_1st_match = -1
-      xx = [document, candidate_recs, recs_present_top_1, recs_present_top_5, recs_present_top_10, pos_1st_match, len(query_terms), len(full_document_terms)]
+      xx = [document, len(recs), int(pos_1st_match==1), int(pos_1st_match<=5), int(pos_1st_match<=10), pos_1st_match, len(unique_query_terms), len(full_query_terms)]
       self.results.loc[len(self.results)] = (xx)
+
+  def calc_terms_histogram(self, results_df):
+    terms = ''.join(list(((results_df.term + ':')*results_df.ct)))[:-1].split(':')
+    ctdf = pd.DataFrame(terms)
+    return ctdf[0].value_counts()

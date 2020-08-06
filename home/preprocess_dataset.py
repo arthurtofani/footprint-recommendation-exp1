@@ -1,7 +1,6 @@
 import sys
 from multiprocessing import Pool
 import time
-from multiprocessing import Pool
 from itertools import chain, combinations, product
 from footprint.models import Project
 import os

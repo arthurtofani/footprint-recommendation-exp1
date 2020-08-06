@@ -130,9 +130,9 @@ logging.info("Starting evaluation")
 cache_folder = '/cache'
 
 
-dataset_file = '/dataset/sessions.sm.csv'
-output_file = '/notebook/sessions.sm_results.csv'
-summary_filename = '/notebook/sessions.sm_summary.csv'
+dataset_file = '/dataset/sessions.md.csv'
+output_file = '/notebook/sessions.md_results.csv'
+summary_filename = '/notebook/sessions.md_summary.csv'
 
 #preprocess_dataset(dataset_file, '/cache', 'session', 'track', 0.8)
 
@@ -142,16 +142,16 @@ summary_filename = '/notebook/sessions.sm_summary.csv'
 
 create_summary()
 num_processors = 3
-pool = Pool(num_processors)
 
+#pool = Pool(num_processors)
 for evaluation_instance in execution.evaluation_instances():
   if not already_done(output_file, *evaluation_instance):
-    pool.apply_async(exec_process, args=(dataset_file, cache_folder, output_file, *evaluation_instance))
-    #exec_process(dataset_file, cache_folder, output_file, *evaluation_instance)
+    #pool.apply_async(exec_process, args=(dataset_file, cache_folder, output_file, *evaluation_instance))
+    exec_process(dataset_file, cache_folder, output_file, *evaluation_instance)
     #print('skipping', *evaluation_instance)
 
-pool.close()
-pool.join()
+#pool.close()
+#pool.join()
 
 
 
