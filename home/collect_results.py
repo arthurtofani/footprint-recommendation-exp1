@@ -20,6 +20,7 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+summary_filename = '/cache/dataset/sessions.md.csv/partials/'
 
 def consolidate_results(output_df, partial_results_file):
   results_mean = results.mean()
